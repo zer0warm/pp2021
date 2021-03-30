@@ -33,27 +33,48 @@ def list_students():
     for student in students:
         print(f"* ({student['id']}) <{student['dob']}> {student['name']}")
 
-def show_student_marks_of_course(course):
+def show_marks_of_course(course):
     print(f"Show marks of the course {course['name']}:")
 
     for student, mark in course['marks']:
         print(f"-> {student['name']}: {mark}")
 
+def select_course_prompt(intro_message):
+    list_courses()
+    print(intro_message)
+
+    return input('---> Choose a course (Enter nothing to skip): ')
+
+def search(List, keyword):
+    for item in List:
+        if keyword in item.values():
+            return item
+
+    empty_item = List[0].copy()
+    empty_item.clear()
+    return empty_item
+
+def action_loop(msg=None, callback=None):
+    while True:
+        keyword = select_course_prompt(f'-> {msg}')
+        if not keyword:
+            print()
+            break
+        callback(search(courses, keyword))
+        print()
+
 if __name__ == '__main__':
     students = []
     courses = []
-    
+
     for _ in range(get_number_of_students()):
         students.append(get_student_information())
 
     for _ in range(get_number_of_courses()):
         courses.append(get_course_information())
 
-    for course in courses:
-        update_marks_of_course(course)
-
-    list_courses()
     list_students()
+    action_loop(msg='Marking courses...', callback=update_marks_of_course)
+    action_loop(msg='Select a course to show marks...', callback=show_marks_of_course)
 
-    for course in courses:
-        show_student_marks_of_course(course)
+    print('Thank you for using the service!')
