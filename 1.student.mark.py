@@ -1,5 +1,5 @@
 def get_number_of_students():
-    return int(input('Enter number of students: '))
+    return int(input('-> Enter number of students: '))
 
 def get_student_information():
     return {'id': input('---> Enter student id: '),
@@ -7,7 +7,7 @@ def get_student_information():
             'dob': input("---> Enter student's date of birth: ")}
 
 def get_number_of_courses():
-    return int(input('Enter number of courses: '))
+    return int(input('-> Enter number of courses: '))
 
 def get_course_information():
     return {'id': input('---> Enter course id: '),
@@ -25,19 +25,24 @@ def list_courses():
     print('Listing available courses:')
 
     for course in courses:
-        print(f"* [{course['id']}] {course['name']}")
+        print(f"- [{course['id']}] {course['name']}", end='')
+        print(' (marks available)' if 'marks' in course else '')
 
 def list_students():
     print('Listing students:')
+    print(f'{"ID":^10}{"DATE OF BIRTH":^15}{"NAME":^20}')
 
     for student in students:
-        print(f"* ({student['id']}) <{student['dob']}> {student['name']}")
+        print(f"{student['id']:^10}{student['dob']:^15}{student['name']:>20}")
+
+    print()
 
 def show_marks_of_course(course):
     print(f"Show marks of the course {course['name']}:")
 
+    print(f'{"NAME":^20}{"MARK":^5}')
     for student, mark in course['marks']:
-        print(f"-> {student['name']}: {mark}")
+        print(f"{student['name']:<20}{mark:>5}")
 
 def select_course_prompt(intro_message):
     list_courses()
