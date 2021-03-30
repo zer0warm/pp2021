@@ -38,11 +38,14 @@ def list_students():
     print()
 
 def show_marks_of_course(course):
-    print(f"Show marks of the course {course['name']}:")
+    if 'marks' in course:
+        print(f"Show marks of the course {course['name']}:")
 
-    print(f'{"NAME":^20}{"MARK":^5}')
-    for student, mark in course['marks']:
-        print(f"{student['name']:<20}{mark:>5}")
+        print(f'{"NAME":^20}{"MARK":^5}')
+        for student, mark in course['marks']:
+            print(f"{student['name']:<20}{mark:>5}")
+    else:
+        print('This course has no marks.')
 
 def select_course_prompt(intro_message):
     list_courses()
