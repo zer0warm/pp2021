@@ -67,8 +67,11 @@ class Course:
         return f"{course_info}{' (graded)' if self.__marksheet else ''}"
 
     def show_marks(self):
-        if self.__marksheet:
-            self.__marksheet.show()
+        if self.__marksheet and self.__marksheet.has_marks():
+            print(f'Show marks of course {self.__name}:')
+            print(f'{"ID":^10}{"NAME":^20}{"MARK":^5}')
+            for student_id, student_name, mark in self.__marksheet.get_content():
+                print(f'{student_id:<10}{student_name:<20}{mark:<5}')
         else:
             print('This course has no marks.')
 
@@ -134,17 +137,14 @@ class Marksheet:
         self.__course = course
         self.__sheet = []
 
+    def has_marks(self):
+        return bool(self.__sheet)
+
     def update(self, student, mark):
         self.__sheet.append((student.ID, student.name, mark))
 
-    def show(self):
-        if self.__sheet:
-            print(f'Show marks of course {self.__course.name}:')
-            print(f'{"ID":^10}{"NAME":^20}{"MARK":^5}')
-            for student_id, student_name, mark in self.__sheet:
-                print(f'{student_id:<10}{student_name:<20}{mark:<5}')
-        else:
-            print('This course has no marks.')
+    def get_content(self):
+        return self.__sheet
 
 if __name__ == '__main__':
     student_list = StudentList()
