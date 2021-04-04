@@ -15,7 +15,7 @@ class Student:
         self.__id = input('---> Enter student id: ')
         self.__name = input('---> Enter student name: ')
         self.__dob = input("---> Enter student's date of birth: ")
-        
+
     def get_info(self):
         return f"{self.__id:<10}{self.__dob:<15}{self.__name:<20}"
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
 
     student_list.details()
     course_list.details()
-    
+
     course_list.bulk_update_marks(student_list)
     course_list.bulk_show_marks()
 
