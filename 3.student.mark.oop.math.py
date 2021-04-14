@@ -8,6 +8,8 @@ class Student:
         self.__id = student_id
         self.__dob = student_dob
         self.__name = student_name
+        self.__marksheet = Marksheet()
+        self.__gpa = None
 
     def get_id(self):
         return self.__id
@@ -18,18 +20,31 @@ class Student:
     def get_dob(self):
         return self.__dob
 
+    def get_gpa(self):
+        return self.__gpa
+
+    def calculate_gpa(self, marks, credits):
+        self.__gpa = math.floor(numpy.average(
+                numpy.array(marks), weights=numpy.array(credits)))
+
     @staticmethod
     def get_info_header():
-        return f'{"ID":^15}{"DATE OF BIRTH":^20}{"NAME":^20}'
+        return f'{"ID":^15}{"DATE OF BIRTH":^20}{"NAME":^20}{"GPA":^5}'
 
     def get_info(self):
-        return f'{self.__id:^15}{self.__dob:^20}{self.__name:>20}'
+        info = f'{self.__id:^15}{self.__dob:^20}{self.__name:>20}'
+        info += f'{(self.__gpa if self.__gpa else "NaN"):>5}'
+        return info
 
 class Course:
-    def __init__(self, course_id, course_name):
+    def __init__(self, course_id, course_name, course_credits):
         self.__id = course_id
         self.__name = course_name
+        self.__ects = course_credits
         self.__marksheet = Marksheet()
+
+    def get_marksheet(self):
+        return self.__marksheet
 
     def get_id(self):
         return self.__id
@@ -37,12 +52,15 @@ class Course:
     def get_name(self):
         return self.__name
 
+    def get_credits(self):
+        return self.__ects
+
     @staticmethod
     def get_info_header():
-        return f'{"ID":^15}{"NAME":^50}'
+        return f'{"ID":^15}{"NAME":^50}{"ECTS":^5}'
 
     def get_info(self):
-        return f'{self.__id:>15}{self.__name:>50}'
+        return f'{self.__id:>15}{self.__name:>50}{self.__ects:>5}'
 
     def add_mark(self, student, mark):
         self.__marksheet.update(student, mark)
@@ -56,15 +74,15 @@ class Marksheet:
     def __init__(self):
         self.__marksheet = []
 
-    @staticmethod
-    def get_info_header():
-        return f'{"STUDENT NAME":^20}{"MARK":^10}'
-
     def has_marks(self):
         return bool(self.__marksheet)
 
-    def update(self, student, mark):
-        self.__marksheet.append((student, mark))
+    def get_list(self):
+        return self.__marksheet
+
+    @staticmethod
+    def get_info_header():
+        return f'{"STUDENT NAME":^20}{"MARK":^10}'
 
     def get_mark_of(self, student):
         res = list(filter(lambda x: x[0].get_id() == student.get_id(), self.__marksheet))
@@ -72,8 +90,8 @@ class Marksheet:
             return res[0][1]
         return False
 
-    def get_list(self):
-        return self.__marksheet
+    def update(self, student, mark):
+        self.__marksheet.append((student, mark))
 
 class Validator:
     def __init__(self, raw_user_input, accept_pattern=None):
@@ -172,9 +190,10 @@ def input_student_details():
 def input_course_details():
     user_input_id = Validator(input('Enter course ID: '), '.*')
     user_input_name = Validator(input('Enter course name: '), '[A-Za-z][A-Za-z ]*')
-    if user_input_id.is_ok() and user_input_name.is_ok():
-        return tuple(map(Validator.value, [user_input_id, user_input_name]))
-    return (None, None)
+    user_input_ects = Validator(input('Enter course credits: '), '[1-9]')
+    if user_input_id.is_ok() and user_input_name.is_ok() and user_input_ects.is_ok():
+        return (user_input_id.value(), user_input_name.value(), user_input_ects.value(int))
+    return (None, None, None)
 
 def input_mark_details(course):
     def input_mark_details_specific():
@@ -205,10 +224,10 @@ def input_course_info():
     if n == -1:
         return False
     for _ in range(n):
-        course_id, course_name = input_course_details()
-        if not (course_id and course_name):
+        course_id, course_name, course_ects = input_course_details()
+        if not (course_id and course_name and course_ects):
             return False
-        Container.courses.append(Course(course_id, course_name))
+        Container.courses.append(Course(course_id, course_name, course_ects))
     return True
 
 def input_marks():
@@ -257,6 +276,28 @@ def list_marks():
                          f'[1-{cmds.get_length()}]')
     cmdp.main_loop()
 
+def calculate_gpa_student(student):
+    marks = []
+    credits = []
+    def calculate_gpa_student_specific():
+        print(f'Calculate GPA for student [{student.get_name()}]...')
+        for course in Container.courses:
+            marks.append(course.get_marksheet().get_mark_of(student))
+            credits.append(course.get_credits())
+        student.calculate_gpa(list(map(float, marks)), list(map(int, credits)))
+        print(f'Done, GPA = {student.get_gpa()}')
+    return calculate_gpa_student_specific
+
+def calculate_gpa():
+    cmds = CommandList()
+    for student in Container.students:
+        cmds.add(f'{student.get_name()}', calculate_gpa_student(student))
+    cmds.add('Return to menu', lambda: -10)
+    cmdp = CommandPrompt('Choose a course:',
+                         cmds,
+                         f'[1-{cmds.get_length()}]')
+    cmdp.main_loop()
+
 if __name__ == '__main__':
     cmdp = CommandPrompt('Enter a command:', CommandList([
                 ('Input student info', input_student_info),
@@ -265,5 +306,6 @@ if __name__ == '__main__':
                 ('Show students', list_students),
                 ('Show courses', list_courses),
                 ('Show marks of a course', list_marks),
-                ('Exit', lambda: -10)]), '[1-7]')
+                ('Calculate GPA of a student', calculate_gpa),
+                ('Exit', lambda: -10)]), '[1-8]')
     cmdp.main_loop()
