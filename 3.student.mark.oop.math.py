@@ -34,10 +34,6 @@ class MarkManager:
     def has_marks(self):
         return bool(self._marks)
 
-    @staticmethod
-    def get_info_header():
-        return f'{"STUDENT NAME":^20}{"MARK":^10}'
-
 class Student(MarkManager):
     def __init__(self, student_id, student_dob, student_name):
         self.__id = student_id
@@ -70,15 +66,6 @@ class Student(MarkManager):
         self.__gpa = math.floor(np.average(
                 np.array(self.__mark_values), weights=np.array(self.__credits)))
 
-    @staticmethod
-    def get_info_header():
-        return f'{"ID":^15}{"DATE OF BIRTH":^20}{"NAME":^20}{"GPA":^5}'
-
-    def get_info(self):
-        info = f'{self.__id:^15}{self.__dob:^20}{self.__name:>20}'
-        info += f'{(self.__gpa if self.__gpa else "NaN"):>5}'
-        return info
-
 class Course(MarkManager):
     def __init__(self, course_id, course_name, course_credits):
         self.__id = course_id
@@ -95,18 +82,8 @@ class Course(MarkManager):
     def get_credits(self):
         return self.__ects
 
-    @staticmethod
-    def get_info_header():
-        return f'{"ID":^15}{"NAME":^50}{"ECTS":^5}'
-
-    def get_info(self):
-        return f'{self.__id:>15}{self.__name:>50}{self.__ects:>5}'
-
     def show_marks(self):
-        print(MarkManager.get_info_header())
-        for mark in self._marks:
-            student = mark.get_object(Student)
-            print(f'{student.get_name():<20}{mark.get_value():^10}')
+        return self._marks
 
 class Validator:
     def __init__(self, raw_user_input, accept_pattern=None):
@@ -259,9 +236,13 @@ def list_students():
         print('No students available.')
     else:
         print('List of students:')
-        print(Student.get_info_header())
+        print(f'{"ID":^15}{"DATE OF BIRTH":^20}{"NAME":^20}{"GPA":^5}')
         for student in Container.students:
-            print(student.get_info())
+            info = f'{student.get_id():^15}'
+            info += f'{student.get_dob():^20}'
+            info += f'{student.get_name():>20}'
+            info += f'{(student.get_gpa() if student.get_gpa() else "NaN"):>5}'
+            print(info)
     print()
 
 def list_courses():
@@ -269,15 +250,22 @@ def list_courses():
         print('No courses available.')
     else:
         print('List of courses:')
-        print(Course.get_info_header())
+        print(f'{"ID":^15}{"NAME":^50}{"ECTS":^5}{"GRADED":^10}')
         for course in Container.courses:
-            print(course.get_info())
+            info = f'{course.get_id():>15}'
+            info += f'{course.get_name():>50}'
+            info += f'{course.get_credits():>5}'
+            info += f'{course.has_marks():^10}'
+            print(info)
     print()
 
 def list_mark_details(course):
     def list_mark_details_specific():
         print(f"Course [{course.get_name()}]'s marksheet:")
-        course.show_marks()
+        print(f'{"STUDENT NAME":^20}{"MARK":^10}')
+        for mark in course.show_marks():
+            student = mark.get_object(Student)
+            print(f'{student.get_name():<20}{mark.get_value():^10}')
     return list_mark_details_specific
 
 def list_marks():
