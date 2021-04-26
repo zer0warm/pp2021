@@ -1,15 +1,50 @@
 import re
 import sys
 import math
-import numpy
+import numpy as np
 
-class Student:
+class MarkManager:
+    class Mark:
+        def __init__(self, value, r_obj=None, e_obj=None):
+            self.__value = value
+            self.__manager = r_obj
+            self.__managee = e_obj
+
+        def get_value(self):
+            return self.__value
+
+        def get_object(self, _type):
+            if isinstance(self.__manager, _type):
+                return self.__manager
+            return self.__managee
+
+    def __init__(self):
+        self._marks = []
+
+    def add_mark(self, value, obj=None):
+        mark = MarkManager.Mark(value, e_obj=obj)
+        self._marks.append(mark)
+
+    def get_mark(self, obj=None):
+        for mark in self._marks:
+            if mark.get_object(obj.__class__) == obj:
+                return mark
+        return False
+
+    def has_marks(self):
+        return bool(self._marks)
+
+    @staticmethod
+    def get_info_header():
+        return f'{"STUDENT NAME":^20}{"MARK":^10}'
+
+class Student(MarkManager):
     def __init__(self, student_id, student_dob, student_name):
         self.__id = student_id
         self.__dob = student_dob
         self.__name = student_name
-        self.__marksheet = Marksheet()
         self.__gpa = None
+        super().__init__()
 
     def get_id(self):
         return self.__id
@@ -23,9 +58,17 @@ class Student:
     def get_gpa(self):
         return self.__gpa
 
-    def calculate_gpa(self, marks, credits):
-        self.__gpa = math.floor(numpy.average(
-                numpy.array(marks), weights=numpy.array(credits)))
+    def __pre_calculate_gpa(self):
+        self.__credits = []
+        self.__mark_values = []
+        for mark in self._marks:
+            self.__credits.append(mark.get_object(Course).get_credits())
+            self.__mark_values.append(mark.get_value())
+
+    def calculate_gpa(self):
+        self.__pre_calculate_gpa()
+        self.__gpa = math.floor(np.average(
+                np.array(self.__mark_values), weights=np.array(self.__credits)))
 
     @staticmethod
     def get_info_header():
@@ -36,15 +79,12 @@ class Student:
         info += f'{(self.__gpa if self.__gpa else "NaN"):>5}'
         return info
 
-class Course:
+class Course(MarkManager):
     def __init__(self, course_id, course_name, course_credits):
         self.__id = course_id
         self.__name = course_name
         self.__ects = course_credits
-        self.__marksheet = Marksheet()
-
-    def get_marksheet(self):
-        return self.__marksheet
+        super().__init__()
 
     def get_id(self):
         return self.__id
@@ -62,36 +102,11 @@ class Course:
     def get_info(self):
         return f'{self.__id:>15}{self.__name:>50}{self.__ects:>5}'
 
-    def add_mark(self, student, mark):
-        self.__marksheet.update(student, mark)
-
     def show_marks(self):
-        print(Marksheet.get_info_header())
-        for (student, mark) in self.__marksheet.get_list():
-            print(f'{student.get_name():>20}{mark:^10}')
-
-class Marksheet:
-    def __init__(self):
-        self.__marksheet = []
-
-    def has_marks(self):
-        return bool(self.__marksheet)
-
-    def get_list(self):
-        return self.__marksheet
-
-    @staticmethod
-    def get_info_header():
-        return f'{"STUDENT NAME":^20}{"MARK":^10}'
-
-    def get_mark_of(self, student):
-        res = list(filter(lambda x: x[0].get_id() == student.get_id(), self.__marksheet))
-        if res:
-            return res[0][1]
-        return False
-
-    def update(self, student, mark):
-        self.__marksheet.append((student, mark))
+        print(MarkManager.get_info_header())
+        for mark in self._marks:
+            student = mark.get_object(Student)
+            print(f'{student.get_name():<20}{mark.get_value():^10}')
 
 class Validator:
     def __init__(self, raw_user_input, accept_pattern=None):
@@ -143,10 +158,7 @@ class CommandPrompt:
         self.__cmd_list.list_commands()
 
     def _execute(self, cmd_num):
-        try:
-            return self.__cmd_list.get_command(cmd_num-1)['callback']()
-        except:
-            print(f'Error: {sys.exc_info()}')
+        return self.__cmd_list.get_command(cmd_num-1)['callback']()
 
     def _get_prompt_string(self):
         return self.__PS[CommandPrompt.state]
@@ -189,7 +201,7 @@ def input_student_details():
 
 def input_course_details():
     user_input_id = Validator(input('Enter course ID: '), '.*')
-    user_input_name = Validator(input('Enter course name: '), '[A-Za-z][A-Za-z ]*')
+    user_input_name = Validator(input('Enter course name: '), '[A-Za-z][A-Za-z1-9. ]*')
     user_input_ects = Validator(input('Enter course credits: '), '[1-9]')
     if user_input_id.is_ok() and user_input_name.is_ok() and user_input_ects.is_ok():
         return (user_input_id.value(), user_input_name.value(), user_input_ects.value(int))
@@ -203,7 +215,9 @@ def input_mark_details(course):
                 input(f'Enter mark of student [{student.get_name()}]: '),
                 '[0-9.]+')
             if user_input_mark.is_ok():
-                course.add_mark(student, math.floor(user_input_mark.value(float)))
+                value = math.floor(user_input_mark.value(float))
+                course.add_mark(value, student)
+                student.add_mark(value, course)
             else:
                 return False
     return input_mark_details_specific
@@ -277,14 +291,9 @@ def list_marks():
     cmdp.main_loop()
 
 def calculate_gpa_student(student):
-    marks = []
-    credits = []
     def calculate_gpa_student_specific():
         print(f'Calculate GPA for student [{student.get_name()}]...')
-        for course in Container.courses:
-            marks.append(course.get_marksheet().get_mark_of(student))
-            credits.append(course.get_credits())
-        student.calculate_gpa(list(map(float, marks)), list(map(int, credits)))
+        student.calculate_gpa()
         print(f'Done, GPA = {student.get_gpa()}')
     return calculate_gpa_student_specific
 
