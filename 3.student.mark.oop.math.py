@@ -1,6 +1,7 @@
 import re
 import sys
 import math
+import curses
 import numpy as np
 
 class MarkManager:
@@ -295,7 +296,18 @@ def calculate_gpa():
                          f'[1-{cmds.get_length()}]')
     cmdp.main_loop()
 
+def curse_splash_screen(stdscr):
+    stdscr.border('|', '|', '-', '-', '+', '+', '+', '+')
+    s = "Curses is still in development..."
+    stdscr.addstr(curses.LINES//2-1, curses.COLS//2-len(s)//2, s)
+    s = "Press any key to continue in CLI mode"
+    stdscr.addstr(curses.LINES//2+1, curses.COLS//2-len(s)//2, s)
+    curses.curs_set(0)
+    stdscr.refresh()
+    stdscr.getkey()
+
 if __name__ == '__main__':
+    curses.wrapper(curse_splash_screen)
     cmdp = CommandPrompt('Enter a command:', CommandList([
                 ('Input student info', input_student_info),
                 ('Input course info', input_course_info),
