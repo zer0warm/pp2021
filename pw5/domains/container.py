@@ -1,0 +1,3 @@
+class Container:
+    students = []
+    courses = []
